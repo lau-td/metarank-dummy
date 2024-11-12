@@ -1,0 +1,120 @@
+state:
+  type: redis
+  host: redis
+  port: 6379
+
+models:
+  xgboost:
+    type: lambdamart
+    backend:
+      type: lightgbm
+      iterations: 50
+      ndcgCutoff: 50
+      seed: 0
+    weights:
+      click: 1
+    features:
+      # - first_name_match
+      # - last_name_match
+      - gender_filter
+      - status_filter
+      # - remote_filter
+      # - source_match
+      # - open_to_work_filter
+      # - profile_created_filter
+      # - search_vector_match
+
+  # Similar items model
+  similar:
+    type: als
+    interactions: [click]
+    factors: 100
+    iterations: 30
+
+  # Trending items model
+  trending:
+    type: trending
+    weights:
+      - interaction: click
+        decay: 1.0 # Time decay factor
+        weight: 1.0 # Interaction weight
+
+  semantic:
+    type: semantic
+    encoder:
+      type: bert
+      model: metarank/all-MiniLM-L6-v2
+      dim: 384 # embedding size
+    itemFields: [first_name, last_name, email]
+
+features:
+  # - name: first_name_match
+  #   type: field_match
+  #   itemField: item.first_name
+  #   rankingField: ranking.query
+  #   method:
+  #     type: term
+  #     language: en
+
+  # - name: last_name_match
+  #   type: field_match
+  #   itemField: item.last_name
+  #   rankingField: ranking.query
+  #   method:
+  #     type: term
+  #     language: en
+
+  # - name: search_vector_match
+  #   type: field_match
+  #   itemField: item.search_vector
+  #   rankingField: ranking.query
+  #   method:
+  #     type: term
+  #     language: en
+
+  # - name: remote_filter
+  #   type: boolean
+  #   scope: item
+  #   field: item.is_remote
+
+  # - name: open_to_work_filter
+  #   type: boolean
+  #   scope: item
+  #   field: item.open_to_work
+
+  # - name: profile_created_filter
+  #   type: boolean
+  #   scope: item
+  #   field: item.profile_created
+
+  - name: gender_filter
+    type: string
+    scope: item
+    source: item.gender
+    values:
+      - MALE
+      - FEMALE
+      - OTHER
+
+  - name: status_filter
+    type: string
+    scope: item
+    source: item.status
+    values:
+      - NO_ACCOUNT
+      - ACTIVE
+      - INACTIVE
+
+  # - name: source_match
+  #   type: string
+  #   scope: item
+  #   source: item.data_source
+  #   values:
+  #     - CRM
+  #     - LINKEDIN
+  #     - WEBSITE
+  #     - REFERRAL
+
+api:
+  port: 8080
+  host: "0.0.0.0"
